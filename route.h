@@ -24,9 +24,9 @@
 #define  BUMP_LEFT                  GPIO_PIN_6
 #define  BUMP_CENTER                GPIO_PIN_7
 #define  BUMP_RIGHT                 GPIO_PIN_5
-#define  BUMP_L                     BUMP_PORT->IDR & BUMP_LEFT
-#define  BUMP_C                     BUMP_PORT->IDR & BUMP_CENTER
-#define  BUMP_R                     BUMP_PORT->IDR & BUMP_RIGHT
+#define  BUMP_L                     ~(BUMP_PORT->IDR & BUMP_LEFT)
+#define  BUMP_C                     ~(BUMP_PORT->IDR & BUMP_CENTER)
+#define  BUMP_R                     ~(BUMP_PORT->IDR & BUMP_RIGHT)
 //Software I2C
 #define  I2C2SDA                    GPIO_PIN_5
 #define  I2C2SCL                    GPIO_PIN_6
@@ -35,9 +35,9 @@
 
 typedef enum
 {
-    Left    = US_LEFT,
-    Center  = US_CENTER,
-    Right   = US_RIGHT,
+    Left    = (u8)(US_LEFT),
+    Center  = (u8)(US_CENTER),
+    Right   = (u8)(US_RIGHT),
 }US_Channel_def;
 
 void route(void);

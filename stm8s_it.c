@@ -32,14 +32,9 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-u8 SPI_Rev=0;
-extern __IO u32 TimingDelay;
-extern u8 Direction;
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 /* Public functions ----------------------------------------------------------*/
-extern void delay(u16 ms);
-extern s8   Direction_Get(u8 code);
 #ifdef _COSMIC_
 /**
   * @brief Dummy Interrupt routine
@@ -146,26 +141,29 @@ INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5)
   * @param  None
   * @retval None
   */
+_Pragma("optimize=none")
 INTERRUPT_HANDLER(EXTI_PORTD_IRQHandler, 6)
 {
   /* In order to detect unexpected events during development,
      it is recommended to set a breakpoint on the following instruction.
   */
     //zone detected
-    delay(20);
-    if((GPIOD->IDR & GPIO_PIN_4)!=1)
+
+    u8 count = 255;
+    while(count--);
+    if((GPIOD->IDR & GPIO_PIN_4)==0)
     {
         final();
     }
-    else if((GPIOD->IDR & GPIO_PIN_6)!=1)
+    else if((GPIOD->IDR & GPIO_PIN_6)==0)
     {
         BUMP_Left();
     }
-    else if((GPIOD->IDR & GPIO_PIN_7)!=1)
+    else if((GPIOD->IDR & GPIO_PIN_7)==0)
     {
         BUMP_Center();
     }
-    else if((GPIOD->IDR & GPIO_PIN_5)!=1)
+    else if((GPIOD->IDR & GPIO_PIN_5)==0)
     {
         BUMP_Right();
     }
@@ -233,20 +231,6 @@ INTERRUPT_HANDLER(SPI_IRQHandler, 10)
   /* In order to detect unexpected events during development,
      it is recommended to set a breakpoint on the following instruction.
   */
-    u8 tmp;
-    //if code received
-    if (SPI->SR & SPI_SR_RXNE)
-    {
-        tmp = SPI->DR;
-        //Direction changed
-        if(tmp!=SPI_Rev)
-        {
-            SPI_Rev=tmp;
-            Direction=Direction_Get(SPI_Rev);
-            //Direction=SPI_Rev;
-        }
-    }
-    SPI->SR = (u8) 0;
 }
 
 /**
@@ -493,12 +477,6 @@ INTERRUPT_HANDLER(TIM6_UPD_OVF_TRG_IRQHandler, 23)
   /* In order to detect unexpected events during development,
      it is recommended to set a breakpoint on the following instruction.
   */
-  if (TimingDelay != 0x00)
-  {
-    TimingDelay--;
-  }
-  /* Cleat Interrupt Pending bit */
-    TIM4_ClearITPendingBit(TIM4_IT_UPDATE);
  }
 #endif /*STM8S903*/
 
