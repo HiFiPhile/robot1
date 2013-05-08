@@ -258,7 +258,7 @@ void Direction_Get()
 
 u16  Distance_Get(US_Channel_def channel)
 {
-    u16 tmp=600;
+    u16 tmp=200;
     disableInterrupts();
     GPIO_Init(US_PORT,(GPIO_Pin_TypeDef)channel, GPIO_MODE_OUT_PP_HIGH_FAST);
     TIM2_SetCounter(0x00);
