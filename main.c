@@ -26,6 +26,7 @@ void Motor_Right_Set(s8 power);
 void Direction_Get();                       //Get current direction from -7 to 8 center is 0
 u16  Distance_Get(US_Channel_def channel);  //Get distance from ultrasonic detector in cm
 void Detection_Enable();                    //Enable the zone detection
+void Detection_Disable();                    //Disable the zone detection
 //i2c
 void I2C2_Int(void);
 void I2C2_Start( void );
@@ -98,13 +99,11 @@ void SYS_init()
     TIM2_TimeBaseInit(TIM2_PRESCALER_16, 65535);
     TIM2_PrescalerConfig(TIM2_PRESCALER_16,TIM2_PSCRELOADMODE_IMMEDIATE);
     TIM2_ARRPreloadConfig(ENABLE);
-    TIM3_DeInit();
     //init IO for ultrasonic
     GPIO_Init(US_PORT,(GPIO_Pin_TypeDef)(US_LEFT | US_CENTER | US_RIGHT), GPIO_MODE_OUT_PP_LOW_FAST);
     //init IO for ultrasonic
     GPIO_Init(BALLON_PORT,BALLON_PIN, GPIO_MODE_OUT_PP_LOW_FAST);
     //init IO for zone detection
-    //GPIO_Init(DETZ_PORT,DETZ_PIN, GPIO_MODE_IN_PU_NO_IT);
     //init IO for jack
     GPIO_Init(START_PORT,START_PIN, GPIO_MODE_IN_PU_NO_IT);
     //init IO for bumper
@@ -290,6 +289,12 @@ void Detection_Enable()
 {
     //init IO for zone detection with rising edge int
     GPIO_Init(DETZ_PORT,DETZ_PIN, GPIO_MODE_IN_PU_IT);
+}
+
+void Detection_Disable()
+{
+    //init IO for zone detection with rising edge int
+    GPIO_Init(DETZ_PORT,DETZ_PIN, GPIO_MODE_IN_PU_NO_IT);
 }
 
 void I2C2_Int(void)

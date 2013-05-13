@@ -4,13 +4,12 @@
 
 #define diffright 99
 #define diffleft 100
-#define Maniabilite_IR 60
-#define Maniabilite_US_Front 80
-#define Maniabilite_US_Side 0.8
+#define Maniabilite_IR 80
+#define Maniabilite_US_Side -0.1
 #define Distance_US_Side 17
-#define Delay_US 15
+#define Delay_US 10
 #define Distance_US_Front 30
-
+extern u8 detflg;
 extern volatile s8 Direction;                                 //Read-only
 extern void delay(u32 ms);                    //delay in millsecond
 extern void Motor_Left_Set(s8 power);              //Set motor power,from -100 to 100
@@ -27,175 +26,129 @@ void route(void)
     MOTOR_LEFT_ON;
     MOTOR_RIGHT_ON;
     LED_SET(0x0000);
-    u16 dleft, dright;
-    Detection_Enable();
-    u16 dcenter;
+    u16 dcenter, dleft, dright;
+    u8 usdata=0;
     while(1)
     {
-
+        //Receive info
+        delay(Delay_US);
         dcenter = Distance_Get(Center);
-        if (dcenter >= Distance_US_Front)                     // champs libre devant
+        delay(Delay_US);
+        dright = Distance_Get(Right);
+        delay(Delay_US);
+        dleft = Distance_Get(Left);
+        //Process info
+        usdata=0;
+        detflg++;
+        if(detflg>30)
         {
+            detflg=0;
+            Detection_Enable();
+        }
+        if(dcenter < Distance_US_Front)
+        {
+            SetBit(usdata,1);
+        }
+        if(dright < Distance_US_Side)
+        {
+            SetBit(usdata,0);
+        }
+        if(dleft < Distance_US_Side)
+        {
+            SetBit(usdata,2);
+        }
+        //Motor Action
+        switch(usdata)
+        {
+        case 0x00:
+            //clear
             if (Direction >= 0)
             {
-                Motor_Right_Set(diffright - 35*Direction);
+                Motor_Right_Set(diffright - Maniabilite_IR*Direction);
                 Motor_Left_Set(diffleft);
-
-
             }
-            if (Direction < 0)
+            else
             {
-                Motor_Left_Set(diffleft + 35*Direction);
+                Motor_Left_Set(diffleft + Maniabilite_IR*Direction);
                 Motor_Right_Set(diffright);
             }
-        }
-        else
-        {
-
-            if (dcenter < Distance_US_Front)        // tant qu'il y a un obstacle devant...
-            {
-                delay(Delay_US);
-                dleft = Distance_Get(Left);
-                delay(Delay_US);
-                dright = Distance_Get(Right);
-
-
-                if ((dleft < 30) && (dright > dleft))  //...et ?gauche...
-                {
-                    Motor_Left_Set(diffleft);          //...on tourne ?droite.
-                    Motor_Right_Set(0);
-                    while(dcenter<30)
-                    {
-                        dcenter=Distance_Get(Center);
-                    }
-                }
-
-                if ((dright < 30) && (dright < dleft))  //...et ?droite...
-                {
-                    Motor_Left_Set(0);                  //...on tourne ?gauche.
-                    Motor_Right_Set(diffright);
-                    while(dcenter<30)
-                    {
-                        dcenter=Distance_Get(Center);
-                    }
-                }
-
-
-                if ((dleft > 30) && (dright > 30))      // ...et rien sur les côtés...
-                {
-                    if (Direction >= 0 )                //...et la balise ?droite...
-                    {
-                        Motor_Left_Set(diffleft);       // on tourne ?droite
-                        Motor_Right_Set(-50);
-                        while(dcenter<30)
-                        {
-                            dcenter=Distance_Get(Center);
-                        }
-                    }
-
-                    else                           //...et la balise ?gauche...
-                    {
-                        Motor_Left_Set(-50);       // on tourne ?gauche
-                        Motor_Right_Set(diffright);
-                        while(dcenter<30)
-                        {
-                            dcenter=Distance_Get(Center);
-                        }
-                    }
-                }
-            }
-        }
-
-
-
-        dright = Distance_Get(Right);          //Danger ?droite
-        if (dright < Distance_US_Side)
-        {
-            Motor_Right_Set(diffright);        //On tourne...
-            Motor_Left_Set(-80);
-            while(dright<Distance_US_Side)          //...jusqu'?ce que le danger soit écart?
-            {
-                dright = Distance_Get(Right);
-                delay(20);
-            }
-            Motor_Left_Set(diffleft);
-        }
-
-
-
-
-        dleft = Distance_Get(Left);            //Danger ?gauche
-        dleft = Distance_Get(Left);            //Danger ?gauche
-        if (dleft < Distance_US_Side)
-        {
-            Motor_Left_Set(diffleft);          //On tourne...
-            Motor_Right_Set(-80);
-            while(dleft<Distance_US_Side)           //...jusqu'?ce que le danger soit écart?
-            {
-                dleft = Distance_Get(Left);
-                delay(20);
-            }
+            break;
+        case 0x01:
+            //right
+            Motor_Left_Set(Maniabilite_US_Side*diffleft);                  //...on tourne ?gauche.
             Motor_Right_Set(diffright);
+            break;
+        case 0x02:
+            //center
+            if(Direction==0)
+            {
+                if(dright >= dleft)
+                {
+                    Motor_Left_Set(diffleft);           //...on tourne ?droite.
+                    Motor_Right_Set(-60);
+                }
+                else
+                {
+                    Motor_Left_Set(-60);                  //...on tourne ?gauche.
+                    Motor_Right_Set(diffright);
+                }
+            }
+            else
+            {
+                if(Direction > 0)
+                {
+                    Motor_Left_Set(diffleft);           //...on tourne ?droite.
+                    Motor_Right_Set(-60);
+                }
+                else
+                {
+                    Motor_Left_Set(-60);                  //...on tourne ?gauche.
+                    Motor_Right_Set(diffright);
+                }
+            }
+            break;
+        case 0x03:
+            //center right
+            Motor_Left_Set(-20);                      //...on tourne ?gauche.
+            Motor_Right_Set(diffright);
+            break;
+        case 0x04:
+            //left
+            Motor_Right_Set(Maniabilite_US_Side*diffright);                  //...on tourne ?droite.
+            Motor_Left_Set(diffleft);
+            break;
+        case 0x05:
+            //left right
+            if((dleft>10) &&(dright>10))
+            {
+                Motor_Right_Set(diffright);
+                Motor_Left_Set(diffleft);
+            }
+            else
+            {
+                Motor_Left_Set(-diffleft);                  //...on marche ?arriere.
+                Motor_Right_Set(-diffright);
+                delay(200);
+                Motor_Left_Set(-diffleft);                  //...on tourne ?arriere.
+                Motor_Right_Set(diffright);
+                delay(200);
+            }
+            break;
+        case 0x06:
+            //left center
+            Motor_Left_Set(diffleft);                  //...on tourne ?gauche.
+            Motor_Right_Set(-20);
+            break;
+        case 0x07:
+            //deblock all
+            Motor_Left_Set(-diffleft);                  //...on marche ?arriere.
+            Motor_Right_Set(-diffright);
+            delay(200);
+            Motor_Left_Set(-diffleft);                  //...on tourne ?arriere.
+            Motor_Right_Set(diffright);
+            delay(200);
+            break;
         }
-
-
-
-
-        // ****************************************************************************************************************************
-        // ****************************************************************************************************************************
-        /*
-        //Test tout
-
-        pright = diffright;
-        pleft = diffleft;
-
-        // *************************************************
-        // Direction par rapport ?la balise
-        if (Direction > 0)
-        {
-        pright = pright - 20*Direction;
-    }
-        if (Direction < 0)
-        {
-        pleft = pleft + 20*Direction;
-    }
-
-        // *************************************************
-        // direction par rapport au US
-        dright = Distance_Get(Right);
-        if (dright < 7)
-        pleft = 0;
-        pright = diffright;
-
-        dleft = Distance_Get(Left);
-        if (dleft < 7)
-        pright = 0;
-        pleft = diffleft;
-
-        dcenter = Distance_Get(Center);
-        if (dcenter < 20)
-        {
-        if (dleft < dright)
-        pleft = diffleft;
-        pright = 0;
-        if (dleft > dright)
-        pright = diffright;
-        pleft = 0;
-    }
-
-        if (dright < 10 && dright>6 && dleft < 10 && dleft > 6 && dcenter> 40)
-        {
-        pleft = diffleft;
-        pright = diffright;
-    }
-
-        // *************************************************
-
-        Motor_Left_Set(pleft);
-        Motor_Right_Set(pright);
-        */
-        // ****************************************************************************************************************************
-        // ****************************************************************************************************************************
     }
 }
 
@@ -225,10 +178,10 @@ void BUMP_Left(void)
     delay(100);
     Motor_Left_Set(diffleft);
     Motor_Right_Set(-diffright);
-    delay(150);
-    Motor_Left_Set(diffleft);
-    Motor_Right_Set(diffright);
     delay(100);
+    //Motor_Left_Set(diffleft);
+    //Motor_Right_Set(diffright);
+    //delay(100);
 }
 
 void BUMP_Center(void)
@@ -244,8 +197,8 @@ void BUMP_Right(void)
     delay(100);
     Motor_Left_Set(-diffleft);
     Motor_Right_Set(diffright);
-    delay(150);
-    Motor_Left_Set(diffleft);
-    Motor_Right_Set(diffright);
     delay(100);
+    //Motor_Left_Set(diffleft);
+    //Motor_Right_Set(diffright);
+    //delay(100);
 }

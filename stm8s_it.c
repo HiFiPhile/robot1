@@ -24,6 +24,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm8s_it.h"
 #include "route.h"
+extern volatile s8 Direction;
+u8 detflg=0;
+extern void Detection_Enable();                    //Enable the zone detection
+extern void Detection_Disable();                    //Disable the zone detection
 /** @addtogroup Template_Project
   * @{
   */
@@ -153,7 +157,15 @@ INTERRUPT_HANDLER(EXTI_PORTD_IRQHandler, 6)
     while(count--);
     if((GPIOD->IDR & GPIO_PIN_4)==0)
     {
-        final();
+        if((Direction>-3)&&(Direction<3))
+        {
+            final();
+        }
+        else
+        {
+            Detection_Disable();
+            detflg=0;
+        }
     }
     else if((GPIOD->IDR & GPIO_PIN_6)==0)
     {
