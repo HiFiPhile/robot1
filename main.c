@@ -27,6 +27,7 @@ void Direction_Get();                       //Get current direction from -7 to 8
 u16  Distance_Get(US_Channel_def channel);  //Get distance from ultrasonic detector in cm
 void Detection_Enable();                    //Enable the zone detection
 void Detection_Disable();                    //Disable the zone detection
+extern void Deblock();
 //i2c
 void I2C2_Int(void);
 void I2C2_Start( void );
@@ -54,7 +55,7 @@ void main(void)
     while(START_PORT->IDR & START_PIN);
     while(1)
     {
-      route();
+        route();
     }
 }
 

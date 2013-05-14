@@ -4,18 +4,20 @@
 
 #define diffright 99
 #define diffleft 100
-#define Maniabilite_IR 80
-#define Maniabilite_US_Side -0.1
-#define Distance_US_Side 17
+#define Maniabilite_IR 20
+#define Maniabilite_US_Side -0.4
+#define Distance_US_Side 18
 #define Delay_US 10
-#define Distance_US_Front 30
+#define Distance_US_Front 35
 extern u8 detflg;
+u16 blockflg=0;
 extern volatile s8 Direction;                                 //Read-only
 extern void delay(u32 ms);                    //delay in millsecond
 extern void Motor_Left_Set(s8 power);              //Set motor power,from -100 to 100
 extern void Motor_Right_Set(s8 power);
 extern u16  Distance_Get(US_Channel_def channel);  //Get distance from ultrasonic detector in cm
 extern void Direction_Get();
+void Deblock();
 extern void Detection_Enable();                    //Enable the zone detection
 extern void LED_SET( u16 Data );                    //Set the status of LEDs
 extern void LED_ON( u16 Data );
@@ -40,7 +42,13 @@ void route(void)
         //Process info
         usdata=0;
         detflg++;
-        if(detflg>30)
+        blockflg++;
+        if(blockflg>600)
+        {
+            blockflg=0;
+            Deblock();
+        }
+        if(detflg>15)
         {
             detflg=0;
             Detection_Enable();
@@ -85,11 +93,11 @@ void route(void)
                 if(dright >= dleft)
                 {
                     Motor_Left_Set(diffleft);           //...on tourne ?droite.
-                    Motor_Right_Set(-60);
+                    Motor_Right_Set(-100);
                 }
                 else
                 {
-                    Motor_Left_Set(-60);                  //...on tourne ?gauche.
+                    Motor_Left_Set(-100);                  //...on tourne ?gauche.
                     Motor_Right_Set(diffright);
                 }
             }
@@ -98,18 +106,19 @@ void route(void)
                 if(Direction > 0)
                 {
                     Motor_Left_Set(diffleft);           //...on tourne ?droite.
-                    Motor_Right_Set(-60);
+                    Motor_Right_Set(-100);
                 }
                 else
                 {
-                    Motor_Left_Set(-60);                  //...on tourne ?gauche.
+                    Motor_Left_Set(-100);                  //...on tourne ?gauche.
                     Motor_Right_Set(diffright);
                 }
             }
+            delay(100);
             break;
         case 0x03:
             //center right
-            Motor_Left_Set(-20);                      //...on tourne ?gauche.
+            Motor_Left_Set(-60);                      //...on tourne ?gauche.
             Motor_Right_Set(diffright);
             break;
         case 0x04:
@@ -137,7 +146,7 @@ void route(void)
         case 0x06:
             //left center
             Motor_Left_Set(diffleft);                  //...on tourne ?gauche.
-            Motor_Right_Set(-20);
+            Motor_Right_Set(-60);
             break;
         case 0x07:
             //deblock all
@@ -157,10 +166,11 @@ void final(void)
     disableInterrupts();
     Motor_Left_Set(-diffleft);
     Motor_Right_Set(-diffright);
-    delay(50);
+    delay(100);
     MOTOR_LEFT_OFF;
     MOTOR_RIGHT_OFF;
     LED_ON(0xffff);
+    delay(400);
     BALLON_START;
     delay(1000);
     BALLON_STOP;
@@ -201,4 +211,18 @@ void BUMP_Right(void)
     //Motor_Left_Set(diffleft);
     //Motor_Right_Set(diffright);
     //delay(100);
+}
+
+void Deblock(void)
+{
+    LED_ON(0xf00f);
+    Motor_Left_Set(-diffleft);
+    Motor_Right_Set(-diffright);
+    delay(1000);
+    Motor_Left_Set(-diffleft);
+    Motor_Right_Set(diffright);
+    delay(200);
+    Motor_Left_Set(diffleft);
+    Motor_Right_Set(diffright);
+    delay(500);
 }
